@@ -1,51 +1,48 @@
 # ============================================================
-# EXERCISE 2: Multi-Version Testing + Code Quality
+# EXERCISE 3: Full CI/CD Pipeline
 # ============================================================
-# Goal: Test on multiple Python versions AND check code quality.
+# Goal: Build a real pipeline — test, quality gate, then deploy.
 #
 # What you'll learn:
-#   - Matrix strategy (test across multiple versions in parallel)
-#   - Multiple jobs in one workflow
-#   - Linting with Ruff (a fast Python linter)
-#   - Why a lint failure is a GOOD thing (catch bugs early!)
+#   - Job dependencies with `needs` (deploy waits for tests)
+#   - Branch-specific triggers (only deploy from main)
+#   - Artifacts (save build outputs)
+#   - Simulated deployment
+#   - The full CI → CD flow
 #
 # Instructions:
 #   1. Replace your .github/workflows/ci.yml with this file
-#   2. Push to GitHub
-#   3. Watch the Actions tab — you'll see MULTIPLE jobs running!
-#   4. Try: Break the code style intentionally, push, see it fail
-#   5. Fix it, push again, see it pass
+#   2. Push to a branch (NOT main) — only test + lint run
+#   3. Create a Pull Request to main — test + lint run
+#   4. Merge the PR — now deploy runs too!
 #
 # ============================================================
 
-name: CI - Test & Lint
+name: CI/CD Pipeline
 
 on:
   push:
-  pull_request:
+    branches: [main]   # Deploy only from main
+  pull_request:         # Test + lint on all PRs
 
 jobs:
-  # ─── JOB 1: Run tests on multiple Python versions ──────────
+  # ─── STAGE 1: Test ─────────────────────────────────────────
   test:
-    name: Test (Python ${{ matrix.python-version }})
+    name: Test
     runs-on: ubuntu-latest
-
-    # MATRIX: Run this job once per Python version — in parallel!
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
-      # CACHING: Don't re-download packages every time
-      - name: Cache pip packages
+      - name: Cache pip
         uses: actions/cache@v5
         with:
           path: ~/.cache/pip
@@ -55,29 +52,76 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run tests
-        run: pytest --verbose
+        run: pytest --verbose --tb=short
 
-  # ─── JOB 2: Check code quality ─────────────────────────────
+  # ─── STAGE 2: Code Quality ────────────────────────────────
   lint:
-    name: Code Quality
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  # ─── STAGE 3: Build Artifact ──────────────────────────────
+  build:
+    name: Build
+    needs: [test, lint]   # Only build if tests AND lint pass
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Create build info
+        run: |
+          echo "Build at: $(date -u)" > build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
+          echo "Runner: ${{ runner.os }}" >> build-info.txt
+
+      # ARTIFACT: Save the build output so other jobs can use it
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
         with:
-          python-version: "3.12"
+          name: build-info
+          path: build-info.txt
 
-      - name: Install Ruff
-        run: pip install ruff
+  # ─── STAGE 4: Deploy (only on main) ───────────────────────
+  deploy:
+    name: Deploy to Production
+    needs: build                          # Wait for build
+    if: github.ref == 'refs/heads/main'   # Only on main branch
+    runs-on: ubuntu-latest
 
-      # Ruff checks: style errors, unused imports, common bugs
-      - name: Check code style
-        run: ruff check .
+    steps:
+      # Download what the build stage produced
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: build-info
 
-      # Ruff format: is the code properly formatted?
-      - name: Check formatting
-        run: ruff format --check .
+      - name: Show build info
+        run: cat build-info.txt
+
+      - name: Deploy (simulated)
+        run: |
+          echo "========================================="
+          echo "  DEPLOYING TO PRODUCTION"
+          echo "========================================="
+          echo ""
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Branch: ${{ github.ref_name }}"
+          echo "  Actor:  ${{ github.actor }}"
+          echo ""
+          echo "  In a real project, this step would:"
+          echo "  - Push a Docker image to a registry"
+          echo "  - Deploy to Kubernetes / AWS / GCP"
+          echo "  - Run database migrations"
+          echo "  - Notify Slack"
+          echo ""
+          echo "  ...but for now: YOUR CODE IS 'LIVE'!"
+          echo "========================================="
