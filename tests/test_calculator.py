@@ -9,6 +9,7 @@ from app.calculator import add, subtract, multiply, divide
 
 # ─── Addition ────────────────────────────────────────────────────────
 
+
 def test_add_positive_numbers():
     assert add(2, 3) == 5
 
@@ -23,6 +24,7 @@ def test_add_zero():
 
 # ─── Subtraction ─────────────────────────────────────────────────────
 
+
 def test_subtract_positive():
     assert subtract(10, 3) == 7
 
@@ -33,6 +35,7 @@ def test_subtract_negative_result():
 
 # ─── Multiplication ──────────────────────────────────────────────────
 
+
 def test_multiply_positive():
     assert multiply(4, 5) == 20
 
@@ -42,6 +45,7 @@ def test_multiply_by_zero():
 
 
 # ─── Division ────────────────────────────────────────────────────────
+
 
 def test_divide_clean():
     assert divide(10, 2) == 5.0
