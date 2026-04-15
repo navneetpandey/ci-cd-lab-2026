@@ -1,0 +1,48 @@
+# ============================================================
+# EXERCISE 1: Your First CI Pipeline
+# ============================================================
+# Goal: Run tests automatically every time you push code.
+#
+# What you'll learn:
+#   - Workflow file structure (name, on, jobs, steps)
+#   - Using pre-built actions (checkout, setup-python)
+#   - Running shell commands in CI
+#
+# Instructions:
+#   1. Copy this file to .github/workflows/ci.yml
+#   2. Push to GitHub
+#   3. Go to the "Actions" tab — watch it run!
+#   4. See the green checkmark? That's CI working.
+#
+# ============================================================
+
+name: CI - Run Tests
+
+# TRIGGER: When does this workflow run?
+on:
+  push:          # Every time code is pushed
+  pull_request:  # Every time a PR is opened or updated
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest   # GitHub gives us a fresh Linux machine
+
+    steps:
+      # Step 1: Get our code onto the runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Step 3: Install our dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 4: Run the tests!
+      - name: Run tests
+        run: pytest --verbose

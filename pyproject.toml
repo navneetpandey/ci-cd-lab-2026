@@ -1,0 +1,11 @@
+[project]
+name = "ci-cd-lab"
+version = "1.0.0"
+description = "A simple calculator app for learning CI/CD with GitHub Actions"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

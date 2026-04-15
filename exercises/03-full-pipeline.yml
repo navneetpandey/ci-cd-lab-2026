@@ -1,0 +1,127 @@
+# ============================================================
+# EXERCISE 3: Full CI/CD Pipeline
+# ============================================================
+# Goal: Build a real pipeline — test, quality gate, then deploy.
+#
+# What you'll learn:
+#   - Job dependencies with `needs` (deploy waits for tests)
+#   - Branch-specific triggers (only deploy from main)
+#   - Artifacts (save build outputs)
+#   - Simulated deployment
+#   - The full CI → CD flow
+#
+# Instructions:
+#   1. Replace your .github/workflows/ci.yml with this file
+#   2. Push to a branch (NOT main) — only test + lint run
+#   3. Create a Pull Request to main — test + lint run
+#   4. Merge the PR — now deploy runs too!
+#
+# ============================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]   # Deploy only from main
+  pull_request:         # Test + lint on all PRs
+
+jobs:
+  # ─── STAGE 1: Test ─────────────────────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest --verbose --tb=short
+
+  # ─── STAGE 2: Code Quality ────────────────────────────────
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff
+      - run: ruff check .
+      - run: ruff format --check .
+
+  # ─── STAGE 3: Build Artifact ──────────────────────────────
+  build:
+    name: Build
+    needs: [test, lint]   # Only build if tests AND lint pass
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create build info
+        run: |
+          echo "Build at: $(date -u)" > build-info.txt
+          echo "Commit: ${{ github.sha }}" >> build-info.txt
+          echo "Branch: ${{ github.ref_name }}" >> build-info.txt
+          echo "Runner: ${{ runner.os }}" >> build-info.txt
+
+      # ARTIFACT: Save the build output so other jobs can use it
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-info
+          path: build-info.txt
+
+  # ─── STAGE 4: Deploy (only on main) ───────────────────────
+  deploy:
+    name: Deploy to Production
+    needs: build                          # Wait for build
+    if: github.ref == 'refs/heads/main'   # Only on main branch
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download what the build stage produced
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-info
+
+      - name: Show build info
+        run: cat build-info.txt
+
+      - name: Deploy (simulated)
+        run: |
+          echo "========================================="
+          echo "  DEPLOYING TO PRODUCTION"
+          echo "========================================="
+          echo ""
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Branch: ${{ github.ref_name }}"
+          echo "  Actor:  ${{ github.actor }}"
+          echo ""
+          echo "  In a real project, this step would:"
+          echo "  - Push a Docker image to a registry"
+          echo "  - Deploy to Kubernetes / AWS / GCP"
+          echo "  - Run database migrations"
+          echo "  - Notify Slack"
+          echo ""
+          echo "  ...but for now: YOUR CODE IS 'LIVE'!"
+          echo "========================================="
