@@ -134,7 +134,7 @@ jobs:                           # ← What to do
   test:                         #   ← Job name (you choose this)
     runs-on: ubuntu-latest      #   ← Which runner (machine) to use
     steps:                      #   ← Ordered list of things to do
-      - uses: actions/checkout@v4         # Use a pre-built action
+      - uses: actions/checkout@v6         # Use a pre-built action
       - run: echo "Hello, CI!"           # Run a shell command
 ```
 
@@ -166,10 +166,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -265,7 +265,7 @@ This single block creates **4 parallel jobs** — one per version.
 
 ```yaml
 - name: Cache pip packages
-  uses: actions/cache@v4
+  uses: actions/cache@v5
   with:
     path: ~/.cache/pip
     key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
@@ -356,10 +356,10 @@ deploy:
 **Artifacts** — Passing data between jobs:
 ```yaml
 # In the build job:
-- uses: actions/upload-artifact@v4    # Save output
+- uses: actions/upload-artifact@v7    # Save output
 
 # In the deploy job:
-- uses: actions/download-artifact@v4  # Retrieve it
+- uses: actions/download-artifact@v8  # Retrieve it
 ```
 
 ### Step 1: Create a feature branch
@@ -448,11 +448,11 @@ on:
 ### Common actions
 | Action | Purpose |
 |--------|---------|
-| `actions/checkout@v4` | Get your code |
-| `actions/setup-python@v5` | Install Python |
-| `actions/cache@v4` | Cache dependencies |
-| `actions/upload-artifact@v4` | Save build outputs |
-| `actions/download-artifact@v4` | Retrieve build outputs |
+| `actions/checkout@v6` | Get your code |
+| `actions/setup-python@v6` | Install Python |
+| `actions/cache@v5` | Cache dependencies |
+| `actions/upload-artifact@v7` | Save build outputs |
+| `actions/download-artifact@v8` | Retrieve build outputs |
 
 ### Useful pytest flags
 ```bash
