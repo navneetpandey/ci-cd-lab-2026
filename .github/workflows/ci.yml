@@ -1,48 +1,83 @@
 # ============================================================
-# EXERCISE 1: Your First CI Pipeline
+# EXERCISE 2: Multi-Version Testing + Code Quality
 # ============================================================
-# Goal: Run tests automatically every time you push code.
+# Goal: Test on multiple Python versions AND check code quality.
 #
 # What you'll learn:
-#   - Workflow file structure (name, on, jobs, steps)
-#   - Using pre-built actions (checkout, setup-python)
-#   - Running shell commands in CI
+#   - Matrix strategy (test across multiple versions in parallel)
+#   - Multiple jobs in one workflow
+#   - Linting with Ruff (a fast Python linter)
+#   - Why a lint failure is a GOOD thing (catch bugs early!)
 #
 # Instructions:
-#   1. Copy this file to .github/workflows/ci.yml
+#   1. Replace your .github/workflows/ci.yml with this file
 #   2. Push to GitHub
-#   3. Go to the "Actions" tab — watch it run!
-#   4. See the green checkmark? That's CI working.
+#   3. Watch the Actions tab — you'll see MULTIPLE jobs running!
+#   4. Try: Break the code style intentionally, push, see it fail
+#   5. Fix it, push again, see it pass
 #
 # ============================================================
 
-name: CI - Run Tests
+name: CI - Test & Lint
 
-# TRIGGER: When does this workflow run?
 on:
-  push:          # Every time code is pushed
-  pull_request:  # Every time a PR is opened or updated
+  push:
+  pull_request:
 
 jobs:
+  # ─── JOB 1: Run tests on multiple Python versions ──────────
   test:
-    name: Run Tests
-    runs-on: ubuntu-latest   # GitHub gives us a fresh Linux machine
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    # MATRIX: Run this job once per Python version — in parallel!
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      # Step 1: Get our code onto the runner
       - name: Checkout code
         uses: actions/checkout@v6
 
-      # Step 2: Install Python
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # CACHING: Don't re-download packages every time
+      - name: Cache pip packages
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest --verbose
+
+  # ─── JOB 2: Check code quality ─────────────────────────────
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      # Step 3: Install our dependencies
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install Ruff
+        run: pip install ruff
 
-      # Step 4: Run the tests!
-      - name: Run tests
-        run: pytest --verbose
+      # Ruff checks: style errors, unused imports, common bugs
+      - name: Check code style
+        run: ruff check .
+
+      # Ruff format: is the code properly formatted?
+      - name: Check formatting
+        run: ruff format --check .
