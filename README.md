@@ -182,7 +182,7 @@ jobs:
 
 4. Click **Commit changes** (commit directly to `main`)
 
-### Step 2: Watch it run
+### Step 2: Watch it run.    
 
 1. Go to the **Actions** tab
 2. You should see your workflow running (yellow spinner)
