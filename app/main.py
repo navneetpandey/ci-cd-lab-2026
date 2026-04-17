@@ -14,7 +14,7 @@ OPERATIONS = {
 def main():
     if len(sys.argv) != 4:
         print("Usage: python -m app.main <operation> <num1> <num2>")
-        print(f"Operations: {', '.join(OPERATIONS)}")
+        print(f"Operations done: {', '.join(OPERATIONS)}")
         sys.exit(1)
 
     op, a, b = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
